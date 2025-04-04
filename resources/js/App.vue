@@ -1,9 +1,16 @@
 <template>
   <div class="flex flex-col h-screen bg-[#0F142A]"> <!-- Fondo Magenta -->
     <!-- Header -->
-    <header class="bg-[#16223F] text-white p-4 flex items-center justify-between shadow-md"> <!-- Encabezado Azul -->
-      <h1 class="text-2xl font-semibold text-center mx-auto">Monitoreo de Producción</h1>
-    </header>
+    <header class="bg-[#16223F] text-white p-4 flex items-center justify-between shadow-md h-20">
+  <!-- Contenedor de imagen para evitar que el header se agrande -->
+  <div class="h-full flex items-center">
+    <img src="/public/img/logo-arod-blanco.svg" alt="Logo" class="h-40 w-40">
+  </div>
+
+  <!-- Título centrado -->
+  <h1 class="text-2xl font-semibold text-center flex-1">Monitor de Producción</h1>
+</header>
+
 
     <div class="flex flex-1 relative"> <!-- Contenedor principal con relative -->
       <!-- Sidebar -->
@@ -70,12 +77,12 @@ function toggleSidebar() {
 // Definir los elementos del menú
 const menuItems = ref([
   { label: "Home", route: "/home", icon: "fas fa-home" },
-  { label: "Prueba", route: "/prueba", icon: "fas fa-flask" },
-  { label: "Ordenes", route: "/index", icon: "fas fa-list" },
+  // { label: "Prueba", route: "/prueba", icon: "fas fa-flask" },
+  // { label: "Ordenes", route: "/index", icon: "fas fa-list" },
   { label: "Modelos", route: "/modelo", icon: "fas fa-cubes" },
   { label: "Líneas", route: "/linea", icon: "fas fa-stream" },
-  { label: "Monitoreo", route: "/monitoreo", icon: "fas fa-chart-line" },
-  { label: "Agregar Orden", route: "/agregar", icon: "fa-solid fa-file-circle-plus"},
+  // { label: "Monitoreo", route: "/monitoreo", icon: "fas fa-chart-line" },
+  // { label: "Agregar Orden", route: "/agregar", icon: "fa-solid fa-file-circle-plus"},
 ]);
 </script>
 

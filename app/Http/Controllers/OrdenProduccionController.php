@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\OrdenProduccion;  
+use App\Models\Registros;
 
 class OrdenProduccionController extends Controller
 {
@@ -34,20 +35,25 @@ class OrdenProduccionController extends Controller
             'idlinea' => 'required|exists:linea_produccion,id',
             'idmodelo' => 'required|exists:modelo,idmodelo',
             'piezas_solicitadas' => 'required|integer|min:1',
-            
         ]);
-
-        // Crear una nueva orden con los datos recibidos
+    
+        // Crear la orden de producción
         $orden = OrdenProduccion::create([
             'orden' => $request->orden,
             'idlinea' => $request->idlinea,
             'idmodelo' => $request->idmodelo,
             'piezas_solicitadas' => $request->piezas_solicitadas,
         ]);
-
-        // Retornar la orden creada
+    
+        // Crear un registro en la tabla registro_produccion con el idorden e idlinea
+        Registros::create([
+            'idorden' => $orden->idorden, // ID de la orden creada
+            'idlinea' => $request->idlinea, // Línea de producción
+        ]);
+    
         return response()->json($orden, 201);
     }
+    
 
     // Actualizar una orden existente
     public function update(Request $request, $id)

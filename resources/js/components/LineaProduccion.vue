@@ -10,7 +10,7 @@
     <!-- Botón para agregar una nueva línea (ahora arriba de la tabla) -->
     <div class="text-center mb-4">
       <button class="btn btn-lg btn-success" @click="abrirModalAgregar">
-        <i class="fa-solid fa-plus"></i> Agregar Nueva Línea
+        <i class="fa-solid fa-plus"></i> Agregar 
       </button>
     </div>
 

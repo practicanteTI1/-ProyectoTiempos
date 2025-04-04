@@ -13,7 +13,7 @@ class Modelo extends Model
     protected $primaryKey = 'idmodelo';
     public $timestamps = false;
 
-    protected $fillable = ['nombre', 'minutosxequipo'];
+    protected $fillable = ['nombre', 'tiempo_ensamble', 'tiempo_preparacion'];
 
     // Relación con OrdenProduccion
 public function ordenes()

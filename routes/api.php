@@ -80,6 +80,7 @@ Route::delete('/lineas/{id}', [LineaProduccionController::class, 'destroy']);
 
 Route::get('/registros', [RegistroController::class, 'index']);
 Route::get('/registros/{idorden}', [RegistroController::class, 'RegistroOrden']);
+Route::get('/registros/acumulado/{idorden}', [RegistroController::class, 'TiempoAcumuladoConPiezasRealizadas']); //Api para hacer el sacar el calculo acumulado de las piezas realizadas.
 
 
 Route::post('/registros/iniciar', [RegistroController::class, 'iniciarProduccion']);
@@ -95,6 +96,15 @@ Route::post('/pausas/iniciar', [PausaProduccionController::class, 'iniciarPausa'
 Route::put('/pausas/finalizar/{idorden}', [PausaProduccionController::class, 'finalizarPausa']);
 
 
+//Endpoits de prueba 
+
+
+Route::post('/iniciar-tiempo', [RegistroController::class, 'iniciarTiempo']);
+Route::post('/registrar-pieza', [RegistroController::class, 'registrarPieza']);
+Route::post('/detener-tiempo', [RegistroController::class, 'detenerTiempo']);
+
+
+Route::get('/tiempo-ensamble/{ordenId}', [RegistroController::class, 'obtenerTiempoEnsamble']);
 
 
 

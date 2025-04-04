@@ -21,7 +21,8 @@
           <tr>
             <th>ID Modelo</th>
             <th>Nombre</th>
-            <th>Minutos por Equipo</th>
+            <th>Tiempo de Ensamble</th>
+            <th>Tiempo de Preparación</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -29,7 +30,8 @@
           <tr v-for="modelo in modelos" :key="modelo.idmodelo">
             <td>{{ modelo.idmodelo }}</td>
             <td>{{ modelo.nombre }}</td>
-            <td>{{ modelo.minutosxequipo }}</td>
+            <td>{{ modelo.tiempo_ensamble }}</td>
+            <td>{{ modelo.tiempo_preparacion }}</td>
             <td>
               <button class="btn btn-warning btn-sm me-2" @click="abrirModalEditar(modelo)">
                 <i class="fa-solid fa-pen"></i> Editar
@@ -61,9 +63,30 @@
               </div>
 
               <div class="mb-3">
-                <label for="minutosxequipo" class="form-label">Minutos por Equipo</label>
-                <input type="number" class="form-control" id="minutosxequipo" v-model="modeloForm.minutosxequipo" required>
-              </div>
+  <label for="tiempo" class="form-label">Tiempo de Ensamble (MM:SS)</label>
+  <input
+    type="text"
+    class="form-control"
+    id="tiempo"
+    v-model="modeloForm.tiempo_ensamble"
+    placeholder="Ej: 02:30"
+    required
+  >
+</div>
+
+<div class="mb-3">
+  <label for="tiempo" class="form-label">Tiempo de Preparación (MM:SS)</label>
+  <input
+    type="text"
+    class="form-control"
+    id="tiempo"
+    v-model="modeloForm.tiempo_preparacion"
+    placeholder="Ej: 02:30"
+    required
+  >
+</div>
+
+
 
               <div class="text-center">
                 <button type="submit" class="btn btn-primary">
@@ -104,6 +127,11 @@ export default {
     this.fetchModelos();
   },
   methods: {
+
+    validarFormatoTiempo(time) {
+    const regex = /^([0-5]?[0-9]):([0-5]?[0-9])$/;  // Acepta el formato MM:SS
+    return regex.test(time);
+  },
     // Obtener todos los modelos
     async fetchModelos() {
       try {
