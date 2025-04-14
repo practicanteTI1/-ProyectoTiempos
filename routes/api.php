@@ -92,8 +92,8 @@ Route::post('/actualizar-piezas', [RegistroController::class, 'actualizarPiezas'
 
 
 //Endpoints para el registro de tiempo de las pausas en la produccion
-Route::post('/pausas/iniciar', [PausaProduccionController::class, 'iniciarPausa']);
-Route::put('/pausas/finalizar/{idorden}', [PausaProduccionController::class, 'finalizarPausa']);
+Route::post('/pausa/iniciar', [PausaProduccionController::class, 'iniciarPausa']);
+Route::post('/pausa/finalizar/{idorden}', [PausaProduccionController::class, 'finalizarPausa']);
 
 
 //Endpoits de prueba 

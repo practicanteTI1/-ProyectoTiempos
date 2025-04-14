@@ -15,7 +15,7 @@ class OrdenProduccionController extends Controller
     public function index()
     {
         // Recuperamos las órdenes con las relaciones de 'linea' y 'modelo'
-        $ordenes = OrdenProduccion::with(['linea', 'modelo'])->get();
+        $ordenes = OrdenProduccion::with(['linea', 'modelo','registros'])->get();
 
         // Retornamos las órdenes en formato JSON
         return response()->json($ordenes);

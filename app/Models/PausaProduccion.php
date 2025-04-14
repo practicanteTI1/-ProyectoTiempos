@@ -10,6 +10,7 @@ class PausaProduccion extends Model
     use HasFactory;
     
     protected $table = 'pausas_produccion';
+    protected $primaryKey = 'idpausa';
 
     protected $fillable = ['idorden', 'motivo', 'inicio_pausa', 'fin_pausa'];
 

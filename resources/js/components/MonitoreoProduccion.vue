@@ -1,9 +1,14 @@
 <script setup>
-import { ref,computed, onMounted } from "vue";
+import { ref,computed, onMounted, watch } from "vue";
 import axios from "axios";
+import emitter from '@/eventsBus'; // Asegúrate que la ruta sea correcta
+import PausaProduccion from '@/components/PausaProduccion.vue';
 
 const ordenId = ref(null);
 const ordenes = ref([]);
+const estadoFiltro = ref("");
+const ordenFinalizada = ref(false);
+
 const registro = ref(null);
 const mensaje = ref("");
 const nuevasPiezas = ref(null);
@@ -27,6 +32,51 @@ const contadorPiezas = ref(0);
 let intervaloTiempo = null;
 let primeraPiezaTardia = false;
 
+const guardarTodo = () => {
+  localStorage.setItem('estadoFiltro', estadoFiltro.value || '');
+  localStorage.setItem('ordenId', ordenId.value || '');
+  localStorage.setItem('cronometroInicio', tiempoInicio.value || '');
+  localStorage.setItem('estadoTrabajo', estadoTrabajo.value || '');
+  localStorage.setItem('barraProgreso', barraProgreso.value || '');
+  localStorage.setItem('estadoPieza', estadoPieza.value || '');
+  localStorage.setItem('piezaActual', piezaActual.value || '');
+  localStorage.setItem('contadorPiezas', contadorPiezas.value); // ✅ GUARDAR CONTADOR
+
+};
+
+
+const resetearEstado = () => {
+  // Reiniciar las variables del cronómetro, estado de la orden y parámetros relacionados
+  ordenId.value = "";
+  registro.value = null;
+  tiempoInicio.value = null;
+  tiempoTranscurrido.value = 0;
+  tiempoFormato.value = "00:00";
+  estadoTrabajo.value = "";
+  estadoPieza.value = "";
+  barraProgreso.value = 0;
+  piezaActual.value = 1;
+  contadorPiezas.value = 0;
+
+  // Limpiar el localStorage para evitar mostrar datos anteriores
+  localStorage.removeItem("estadoFiltro");
+  localStorage.removeItem("ordenId");
+  localStorage.removeItem("cronometroInicio");
+  localStorage.removeItem("estadoTrabajo");
+  localStorage.removeItem("barraProgreso");
+  localStorage.removeItem("estadoPieza");
+  localStorage.removeItem("piezaActual");
+  localStorage.removeItem("contadorPiezas");
+
+  mensaje.value = "Selecciona una orden.";
+};
+
+
+
+const abrirModal = () => {
+  emitter.emit('abrir-modal-pausa');
+};
+
 
 const obtenerOrdenes = async () => {
   cargando.value = true;
@@ -39,6 +89,40 @@ const obtenerOrdenes = async () => {
     cargando.value = false;
   }
 };
+
+const restaurarTodo = () => {
+  const filtroGuardado = localStorage.getItem('estadoFiltro');
+  if (filtroGuardado) estadoFiltro.value = filtroGuardado;
+
+  const ordenGuardada = localStorage.getItem('ordenId');
+  if (ordenGuardada) {
+    ordenId.value = ordenGuardada;
+    buscarOrden(); // Actualiza el registro con la orden guardada
+  }
+
+  const cronometroGuardado = localStorage.getItem('cronometroInicio');
+  if (cronometroGuardado) {
+    tiempoInicio.value = parseInt(cronometroGuardado);
+    iniciarIntervalo(); // Esta función debe reiniciar el intervalo del cronómetro
+  }
+
+  const estadoTrabajoGuardado = localStorage.getItem('estadoTrabajo');
+  if (estadoTrabajoGuardado) estadoTrabajo.value = estadoTrabajoGuardado;
+
+  const barraGuardada = localStorage.getItem('barraProgreso');
+  if (barraGuardada) barraProgreso.value = parseFloat(barraGuardada);
+
+  const estadoPiezaGuardado = localStorage.getItem('estadoPieza');
+  if (estadoPiezaGuardado) estadoPieza.value = estadoPiezaGuardado;
+
+  const piezaActualGuardada = localStorage.getItem('piezaActual');
+  if (piezaActualGuardada) piezaActual.value = parseInt(piezaActualGuardada);
+
+  const contadorGuardado = localStorage.getItem('contadorPiezas');
+  if (contadorGuardado) contadorPiezas.value = parseInt(contadorGuardado);
+
+};
+
 
 const fetchData = async () => {
   try {
@@ -61,6 +145,7 @@ const buscarOrden = async () => {
   try {
     const res = await axios.get(`/api/registros/${ordenId.value}`);
     registro.value = res.data;
+    guardarTodo(); 
 
     // Verificar si el status es 'finalizado' antes de continuar
     if (registro.value.status === "finalizado") {
@@ -101,7 +186,20 @@ const buscarOrden = async () => {
 
 // Computed para filtrar órdenes que no estén finalizadas
 const ordenesFiltradas = computed(() => {
-  return ordenes.value.filter((orden) => orden.status !== "finalizado");
+  // Primero, filtramos las órdenes que no están finalizadas
+  const noFinalizadas = ordenes.value.filter((orden) => orden.status !== "finalizado");
+
+  // Si no se ha seleccionado ninguna línea (estadoFiltro vacío), retornamos todas
+  if (!estadoFiltro.value) {
+    return noFinalizadas;
+  }
+
+  // Si se seleccionó una línea, filtramos las órdenes que pertenezcan a esa línea
+  // En tu API, la propiedad de la línea se llama "linea" y su nombre es "nombre"
+  return noFinalizadas.filter((orden) => {
+    return orden.linea && orden.linea.nombre === estadoFiltro.value;
+  });
+  
 });
 
 
@@ -119,18 +217,10 @@ const iniciarTiempo = async () => {
     if (res.data.fecha_guardada) {
       tiempoInicio.value = new Date(res.data.fecha_guardada).getTime();
 
-      intervaloTiempo = setInterval(() => {
-        const tiempoPasado = Math.floor((Date.now() - tiempoInicio.value) / 1000); // Tiempo en segundos
-        const horas = Math.floor(tiempoPasado / 3600); // 3600 segundos = 1 hora
-        const minutos = Math.floor((tiempoPasado % 3600) / 60); // Minutos restantes
-        const segundos = tiempoPasado % 60; // Segundos restantes
+      // Guardar en localStorage
+      localStorage.setItem('cronometroInicio', tiempoInicio.value);
 
-        tiempoFormato.value = `${horas} horas ${minutos} minutos ${segundos} segundos`;
-
-        // Actualizar barra de progreso
-        actualizarEstadoPieza(tiempoPasado);
-      }, 1000);
-
+      iniciarIntervalo(); // Separamos el intervalo
       mensaje.value = `Tiempo de producción iniciado.`;
     }
 
@@ -138,6 +228,23 @@ const iniciarTiempo = async () => {
     mensaje.value = error.response?.data?.message || "Error al registrar el inicio.";
   }
 };
+
+function iniciarIntervalo() {
+  if (intervaloTiempo) clearInterval(intervaloTiempo);
+
+  intervaloTiempo = setInterval(() => {
+    const tiempoPasado = Math.floor((Date.now() - tiempoInicio.value) / 1000);
+    const horas = Math.floor(tiempoPasado / 3600);
+    const minutos = Math.floor((tiempoPasado % 3600) / 60);
+    const segundos = tiempoPasado % 60;
+
+    tiempoFormato.value = `${horas} horas ${minutos} minutos ${segundos} segundos`;
+
+    actualizarEstadoPieza(tiempoPasado); // tu lógica
+  }, 1000);
+}
+
+
 
 
 // Agregar estas variables
@@ -191,34 +298,43 @@ const actualizarEstadoPieza = (tiempoTranscurridoTotal) => {
     // La primera pieza siempre se marca como "A tiempo"
     estadoTrabajo.value = "A tiempo";
     estadoPieza.value = `OP pieza 1 A tiempo (pieza 1 actual)`;
+    guardarTodo()
     barraProgreso.value = (pieceElapsed / ensambleTime) * 100;
     barraColor.value = "verde"; // Barra verde indicando que está a tiempo
+    
   } else if (piezaEnProceso === contadorPiezas.value + 1) {
     // Si la pieza en proceso es exactamente 1 más que las completadas, está "A tiempo"
     estadoTrabajo.value = "A tiempo";
     estadoPieza.value = `OP pieza ${contadorPiezas.value + 1} A tiempo (pieza ${piezaEnProceso} actual)`;
+    guardarTodo()
     barraProgreso.value = (pieceElapsed / ensambleTime) * 100;
     barraColor.value = "verde"; // Barra verde indicando que está a tiempo
   } else if (piezaEnProceso > contadorPiezas.value + 1) {
     // Si la pieza en proceso es más de 1 adelante, está "Atrasado"
     estadoTrabajo.value = "Atrasado";
     estadoPieza.value = `OP pieza ${contadorPiezas.value} Atrasado (pieza ${piezaEnProceso} actual)`;
+    guardarTodo()
     barraProgreso.value = (pieceElapsed / ensambleTime) * 100;
     barraColor.value = "rojo"; // Barra roja indicando que está atrasado
+   
   } else {
     // Si la pieza en proceso es menor o igual al contador de piezas, se mantiene a tiempo
     estadoTrabajo.value = "A tiempo";
     estadoPieza.value = `OP pieza ${piezaEnProceso} A tiempo (pieza ${piezaEnProceso})`;
+    guardarTodo()
     barraProgreso.value = (pieceElapsed / ensambleTime) * 100;
     barraColor.value = "verde"; // Barra verde indicando que está a tiempo
+    
   }
 
   // Cuando capture la pieza atrasada, la barra vuelve a verde y se actualiza el estado
   if (estadoTrabajo.value === "Atrasado" && piezaEnProceso === contadorPiezas.value + 1) {
     estadoTrabajo.value = "A tiempo";
     estadoPieza.value = `OP pieza ${piezaEnProceso} A tiempo (pieza ${piezaEnProceso})`;
+    guardarTodo()
     barraProgreso.value = (pieceElapsed / ensambleTime) * 100;
     barraColor.value = "verde"; // Barra verde cuando la pieza es registrada
+   
   }
 }
 
@@ -260,21 +376,34 @@ const formatearTiempo = (totalMinutos) => {
 };
 
 const detenerTiempo = async () => {
-  if (intervaloTiempo) {
-    clearInterval(intervaloTiempo);
-    intervaloTiempo = null;
-    tiempoTranscurrido.value = tiempoFormato.value;
+  // Si la orden no está finalizada, detén el cronómetro y registra la finalización
+  if (!ordenFinalizada.value) {
+    if (intervaloTiempo) {
+      clearInterval(intervaloTiempo);
+      intervaloTiempo = null;
+      tiempoTranscurrido.value = tiempoFormato.value; // Actualizamos el tiempo transcurrido
 
-    try {
-      await axios.post("/api/detener-tiempo", {
-        idorden: ordenId.value,
-        fin: new Date().toISOString(),
-      });
-    } catch (error) {
-      mensaje.value = 'Error al registrar el fin.';
+      try {
+        // Notificar al backend que se finaliza la orden
+        await axios.post("/api/detener-tiempo", {
+          idorden: ordenId.value,
+          fin: new Date().toISOString(),
+        });
+        mensaje.value = "Orden finalizada.";
+        // Marcamos la orden como finalizada para la siguiente acción del botón "Fin"
+        ordenFinalizada.value = true;
+      } catch (error) {
+        mensaje.value = 'Error al registrar el fin.';
+      }
     }
+  } else {
+    // Si la orden ya está finalizada, limpiar todos los parámetros y reiniciar el estado
+    resetearEstado();
+    // Reiniciar el flag para que se pueda seleccionar otra orden
+    ordenFinalizada.value = false;
   }
 };
+
 
 // 💥 Función para registrar la pieza
 // Modificar la función registrarPieza
@@ -301,6 +430,7 @@ const registrarPieza = async () => {
     // Actualizar el contador de piezas realizadas
     registro.value.piezas_realizadas = response.data.piezas_realizadas;
     contadorPiezas.value = response.data.piezas_realizadas;
+    guardarTodo()
 
     // Calcular el tiempo transcurrido
     const tiempoTranscurrido = Math.floor((Date.now() - tiempoInicio.value) / 1000);
@@ -324,6 +454,7 @@ const registrarPieza = async () => {
     // Contador y estado de la pieza
     contadorPiezas.value++;
     piezaActual.value = contadorPiezas.value + 1;
+    
 
     // Si la pieza estaba atrasada, cambiamos el estado
     if (estadoTrabajo.value === "Atrasado") {
@@ -357,12 +488,13 @@ const tiempoAcumuladoEnsamble = computed(() => {
   return `${horas} horas ${minutos} minutos ${segundos} segundos`;
 });
 
+
 // Tiempo acumulado de preparación (se cuenta solo para la primera pieza)
 const tiempoAcumuladoPreparacion = computed(() => {
   if (!registro.value || !registro.value.tiempo_preparacion || registro.value.piezas_realizadas === undefined) {
-    return "0 horas 0 minutos";
+    return "0 horas 0 minutos 0 segundos";
   }
-   const piezas = registro.value.piezas_realizadas;
+  const piezas = registro.value.piezas_realizadas;
   const [h, m, s] = registro.value.tiempo_preparacion.split(":").map(Number);
   const totalSegundos = piezas * (h * 3600 + m * 60 + s);
   const horas = Math.floor(totalSegundos / 3600);
@@ -370,6 +502,7 @@ const tiempoAcumuladoPreparacion = computed(() => {
   const segundos = totalSegundos % 60;
   return `${horas} horas ${minutos} minutos ${segundos} segundos`;
 });
+
 
 
 
@@ -384,32 +517,68 @@ const tiempoAcumuladoTotal = computed(() => {
   ) {
     return "0 horas 0 minutos 0 segundos";
   }
+
   const piezas = registro.value.piezas_realizadas;
-  if (piezas < 1) return "0 horas 0 minutos 0 segundos";
   const [hEns, mEns, sEns] = registro.value.tiempo_ensamble.split(":").map(Number);
   const [hPrep, mPrep, sPrep] = registro.value.tiempo_preparacion.split(":").map(Number);
-  const ensamble = hEns * 3600 + mEns * 60 + sEns;
-  const preparacion = hPrep * 3600 + mPrep * 60 + sPrep;
-  // Para la primera pieza se suma el tiempo de preparación; para las demás se suma solo el tiempo de ensamble
-  const totalSegundos = piezas  * ensamble + preparacion;
+
+  const tiempoEnsambleSeg = hEns * 3600 + mEns * 60 + sEns;
+  const tiempoPreparacionSeg = hPrep * 3600 + mPrep * 60 + sPrep;
+
+  // Modo B: ambos tiempos se aplican por cada pieza
+  const totalSegundos = piezas * (tiempoEnsambleSeg + tiempoPreparacionSeg);
+
   const horas = Math.floor(totalSegundos / 3600);
   const minutos = Math.floor((totalSegundos % 3600) / 60);
   const segundos = totalSegundos % 60;
+
   return `${horas} horas ${minutos} minutos ${segundos} segundos`;
 });
 
 
 
+// Función para convertir una cadena de tiempo al formato "X horas Y minutos Z segundos" a segundos
+const convertirATiempoSegundos = (tiempoStr) => {
+  const regex = /(\d+)\s+horas\s+(\d+)\s+minutos\s+(\d+)\s+segundos/;
+  const match = tiempoStr.match(regex);
+  if (!match) return 0;
+  const [, horas, minutos, segundos] = match.map(Number);
+  return horas * 3600 + minutos * 60 + segundos;
+};
+
+// Computed property para la productividad
+const Eficiencia = computed(() => {
+  const acumuladoSegundos = convertirATiempoSegundos(tiempoAcumuladoTotal.value);
+  const transcurridoSegundos = convertirATiempoSegundos(tiempoFormato.value);
+  
+  if (transcurridoSegundos === 0) return "0.00"; // Para evitar división por cero
+  
+  const prod = (acumuladoSegundos / transcurridoSegundos) * 100;
+  return prod.toFixed(2);
+});
 
 
 onMounted(() => {
+  restaurarTodo();
   obtenerOrdenes();
   fetchData();
 });
+
 </script>
 
 
 <template>
+
+<select id="filtroStatus" class="bg-white w-1/3 text-sm py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        v-model="estadoFiltro">
+  <option value="">Todas las Lineas</option>
+  <option value="Linea Ensamble 1">Linea Ensamble 1</option>
+  <option value="Linea Ensamble 2">Linea Ensamble 2</option>
+  <option value="Linea Ensamble 3">Linea Ensamble 3</option>
+</select>
+
+
+
   <div class="min-h-screen bg-blue-to-r from-blue-200 via-purple-300 to-indigo-400 flex flex-col items-center justify-start p-6 space-y-8">
     <!-- Sección para seleccionar la orden -->
     <div class="w-full max-w-lg mb-6">
@@ -441,7 +610,8 @@ onMounted(() => {
       </div>
 
       <div class="p-6 border rounded-xl shadow-xl bg-gray-50">
-        <p><strong class="font-semibold">Línea de Producción:</strong> {{ registro.nombre_linea }}</p>
+    <!-- Después: -->
+<p><strong class="font-semibold">Línea de Producción:</strong> {{ registro.nombre }}</p>
       </div>
 
       <div class="p-6 border rounded-xl shadow-xl bg-gray-50">
@@ -465,7 +635,7 @@ onMounted(() => {
         <!-- Muestra el tiempo estimado -->
       </div>
       <div class="p-6 border rounded-xl shadow-xl bg-gray-50">
-        <p><strong class="font-semibold">Productividad:</strong> <span class="text-blue-600 font-bold">{{ productividad }}%</span></p>
+        <p><strong class="font-semibold">Productividad:</strong> <span class="text-blue-600 font-bold"> {{ Eficiencia }}%</span></p>
       </div>
     </div>
 
@@ -487,9 +657,11 @@ onMounted(() => {
 </div>
 <p v-if="estadoPieza" class="mt-2 text-center text-white font-semibold">
   Estado: {{ estadoPieza }} 
-  <span v-if="piezaActual <= registro.piezas_solicitadas"></span>
+  <span v-if="registro && piezaActual <= registro.piezas_solicitadas"></span>
+
 </p>
 
+<PausaProduccion />
 
     <!-- Sección para registrar piezas -->
     <div class="w-full max-w-lg">
@@ -497,7 +669,7 @@ onMounted(() => {
       <div class="mt-4 flex justify-between">
         <button @click="iniciarTiempo" class="bg-green-500 text-white p-3 rounded-xl">Inicio</button>
         <button @click="registrarPieza" class="bg-yellow-500 text-white p-3 rounded-xl">Registrar</button>
-        <button @click="" class="bg-yellow-500 text-white p-3 rounded-xl">Pausa</button>
+        <button @click="abrirModal" class="bg-yellow-500 text-white p-3 rounded-xl">Pausa</button>
         <button @click="detenerTiempo" class="bg-red-500 text-white p-3 rounded-xl">Fin</button>
       </div>
     </div>

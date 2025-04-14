@@ -6,6 +6,7 @@ import LineaProduccion from './components/LineaProduccion.vue';
 import Home from './components/Home.vue';
 import MonitoreoProduccion from './components/MonitoreoProduccion.vue';
 import AgregarOrden from './components/ordenes/AgregarOrden.vue';
+import PausaProduccion from './components/PausaProduccion.vue';
 
 const routes = [
  
@@ -15,7 +16,8 @@ const routes = [
   { path: '/linea', component: LineaProduccion },
   { path: '/home', component: Home },
   { path: '/monitoreo', component: MonitoreoProduccion },
-  { path: '/agregar', component: AgregarOrden }
+  { path: '/agregar', component: AgregarOrden },
+  { path: '/pausas', component: PausaProduccion }
 
 ];
 

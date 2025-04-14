@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Registros;
 
 class OrdenProduccion extends Model
 {
@@ -22,6 +23,9 @@ class OrdenProduccion extends Model
         'created_at'
     ];
 
+    // Aseguramos que el accessor se incluya al convertir a JSON
+    protected $appends = ['piezas_realizadas'];
+
     // Relaciones con otras tablas (Ejemplo)
     public function linea()
     {
@@ -32,5 +36,21 @@ class OrdenProduccion extends Model
     {
         return $this->belongsTo(Modelo::class, 'idmodelo');
     }
+
+
+    // Relación con registros_produccion
+    public function registros()
+    {
+        return $this->hasMany(Registros::class, 'idorden');
+    }
+
+    public function getPiezasRealizadasAttribute()
+    {
+        // Ordena los registros por created_at y toma el último registro
+        $ultimoRegistro = $this->registros->sortBy('created_at')->last();
+        return $ultimoRegistro ? $ultimoRegistro->piezas_realizadas : 0;
+    }
+    
+
 }
 

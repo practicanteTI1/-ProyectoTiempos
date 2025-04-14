@@ -35,6 +35,7 @@
             <th>Modelo</th>
             <th>Piezas Solicitadas</th>
             <th>Status</th>
+            <th>Piezas Realizadas</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -46,14 +47,18 @@
     <td>{{ orden.modelo.nombre }}</td>
     <td>{{ orden.piezas_solicitadas }}</td>
     <td>{{ orden.status }}</td>
+    <td>{{ orden.piezas_realizadas }}</td>
     <td>
-      <button class="btn btn-warning btn-sm me-2" @click="abrirModalEditar(orden)">
-        <i class="fa-solid fa-pen"></i>
-      </button>
-      <button class="btn btn-danger btn-sm" @click="confirmarEliminarOrden(orden.idorden)">
-        <i class="fa-solid fa-trash"></i>
-      </button>
-    </td>
+  <div v-if="estadoFiltro === 'orden creada' && orden.status === 'orden creada'">
+    <button class="btn btn-warning btn-sm me-2" @click="abrirModalEditar(orden)">
+      <i class="fa-solid fa-pen"></i>
+    </button>
+    <button class="btn btn-danger btn-sm" @click="confirmarEliminarOrden(orden.idorden)">
+      <i class="fa-solid fa-trash"></i>
+    </button>
+  </div>
+</td>
+
   </tr>
 </tbody>
 
@@ -184,6 +189,12 @@ export default {
     this.fetchOrdenes();
     this.fetchLineas();
     this.fetchModelos();
+
+    // Auto actualización cada 2 minutos (120000 ms)
+  setInterval(() => {
+    this.fetchOrdenes();
+  }, 120000);
+  
   },
   computed: {
   // Filtra las órdenes según el estado seleccionado

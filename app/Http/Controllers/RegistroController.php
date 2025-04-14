@@ -23,13 +23,14 @@ class RegistroController extends Controller
         $registro = DB::table('ordenproduccion')
             ->join('modelo', 'ordenproduccion.idmodelo', '=', 'modelo.idmodelo')
             ->leftJoin('registros_produccion', 'ordenproduccion.idorden', '=', 'registros_produccion.idorden')
-            ->leftJoin('linea_produccion', 'registros_produccion.idlinea', '=', 'linea_produccion.id')
+            ->leftJoin('linea_produccion', 'ordenproduccion.idlinea', '=', 'linea_produccion.id')
             ->select(
                 'ordenproduccion.idorden',
                 'ordenproduccion.piezas_solicitadas',
                 'modelo.tiempo_ensamble',
                 'modelo.tiempo_preparacion',
                 'modelo.nombre as nombre_modelo',
+                'linea_produccion.nombre as nombre',
                 DB::raw('
                 CASE 
                     WHEN FLOOR(ordenproduccion.piezas_solicitadas * 
@@ -453,6 +454,13 @@ public function registrarPieza(Request $request)
             'piezas_realizadas' => $nuevoTotal,
             'created_at' => now(),
         ]);
+
+        // 🔹 Actualizar el estado de la orden a "en proceso"
+        DB::table('ordenproduccion')
+            ->where('idorden', $idorden)
+            ->update(['status' => 'en proceso']); // Aquí cambias el estado
+
+
 
         $tiempoTranscurrido = null;
         $tiempoFormateado = 'N/A';
